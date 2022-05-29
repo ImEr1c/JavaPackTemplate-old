@@ -1,0 +1,52 @@
+plugins {
+    id 'java'
+    id "de.undercouch.download" version "5.1.0"
+}
+
+repositories {
+    maven { url 'https://jitpack.io' }
+}
+
+// The version of the compiler
+String JavaDatapackVersion = "0.1.5"
+
+// The Minecraft world where to copy the datapack (.minecraft/saves/world-name)
+String world = "Test World"
+
+// Or set the name here
+String id = "id"
+
+dependencies {
+    implementation "com.github.batmanatorul:JavaPackAPI:$JavaDatapackVersion"
+}
+
+jar {
+    baseName id
+}
+
+task downloadJDP(type: Download, dependsOn: jar) {
+    src "https://github.com/batmanatorul/JavaPack/releases/download/$JavaDatapackVersion/JavaPack-$JavaDatapackVersion" + ".jar"
+    dest 'build/libs'
+}
+
+task compileDatapack(type: JavaExec, dependsOn: downloadJDP) {
+    classpath = files("build/libs/JavaPack-$JavaDatapackVersion" + ".jar")
+    workingDir("build/libs")
+    args(id)
+}
+
+task deleteCompiler(type: Delete, dependsOn: compileDatapack) {
+    delete files("build/libs/JavaPack-$JavaDatapackVersion" + ".jar")
+}
+
+task zipDatapack(type: Zip, dependsOn: deleteCompiler) {
+    from files("build/libs/datapack").files
+    destinationDir(file("build/libs"))
+    String name = "$id" + ".zip"
+    archiveName(name)
+}
+
+task run(type: Copy, dependsOn: zipDatapack) {
+    from "build/libs/$id" + ".zip"
+    into System.getenv("APPDATA") + "/.minecraft/saves/$world/datapacks"
+}
